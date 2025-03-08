@@ -3,7 +3,7 @@ import csvtojson from "csvtojson";
 import path from "path";
 
 // MySQL connection setup
-const db = mysql.createConnection({
+export const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "rootpassword",
