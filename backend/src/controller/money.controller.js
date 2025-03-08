@@ -3,18 +3,33 @@ import { PriorityQueue } from "../utils/PriorityQueue.js";
 
 export const getOptions = async (req, res) => {
   try {
-    // const { from_account, to_account } = req.query;
-    // if (!from_account || !to_account) {
-    //   throw new Error("Invalid Data");
-    // }
-    // const from_Bank_Id = await db.query(
-    //   `select bank_id from accounts where account_id = ${from_account}`
-    // );
-    // const to_Bank_Id = await db.query(
-    //   `select bank_id from accounts where account_id = ${from_account}`
-    // );
-    const min_time = await calculateMinTime(6, 4);
-    const min_cost = await calculateMinCost(6, 4);
+    const { from_bank, to_bank } = req.query;
+    const fromBankPromise = new Promise((res, rej) => {
+      db.query(
+        `SELECT * FROM banks WHERE bank_name ='${from_bank}'`,
+        (err, result) => {
+          if (err) rej(err);
+
+          res(result[0].bank_id);
+        }
+      );
+    });
+    const from_bank_id = await fromBankPromise;
+
+    const toBankPromise = new Promise((res, rej) => {
+      db.query(
+        `SELECT * FROM banks WHERE bank_name ='${to_bank}'`,
+        (err, result) => {
+          if (err) rej(err);
+          res(result[0].bank_id);
+        }
+      );
+    });
+    const to_bank_id = await toBankPromise;
+
+    const min_time = await calculateMinTime(from_bank_id, to_bank_id);
+    const min_cost = await calculateMinCost(from_bank_id, to_bank_id);
+    console.log(min_cost, min_time);
     res.status(200).json({
       message: "Options fetched successfully",
       data: {
@@ -37,8 +52,10 @@ const calculateMinTime = async (from_Bank_Id, to_Bank_Id) => {
     );
     const total_banks = await total_banksPromise;
     let dist = [];
+    let path = [];
     for (let i = 0; i < total_banks; i++) {
       dist[i] = 1000000000;
+      path[i] = i;
     }
     dist[from_Bank_Id] = 0;
     let pq = new PriorityQueue();
@@ -66,7 +83,7 @@ const calculateMinTime = async (from_Bank_Id, to_Bank_Id) => {
         if (dist[to] > weight + edgeWt) {
           dist[to] = weight + edgeWt;
           pq.enqueue(to, dist[to]);
-          console.log(to, dist[to]);
+          path[to] = node;
         }
       }
     }
